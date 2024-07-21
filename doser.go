@@ -11,12 +11,20 @@ import (
 )
 
 var (
-	url             string
-	payload         string
-	threads         int
-	requestCounter  int
-	printedMsgs     []string
-	waitGroup       sync.WaitGroup
+	url            string
+	payload        string
+	threads        int
+	requestCounter int
+	printedMsgs    []string
+	waitGroup      sync.WaitGroup
+	userAgents     = []string{
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134",
+		"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1",
+		"Mozilla/5.0 (Linux; Android 8.0.0; SM-G950F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.137 Mobile Safari/537.36",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0",
+	}
 )
 
 func printMsg(msg string) {
@@ -51,10 +59,21 @@ func handleStatusCodes(statusCode int) {
 	}
 }
 
+func getRandomUserAgent() string {
+	return userAgents[rand.Intn(len(userAgents))]
+}
+
 func sendGET() {
 	defer waitGroup.Done()
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	req.Header.Set("User-Agent", getRandomUserAgent())
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
@@ -66,7 +85,15 @@ func sendGET() {
 func sendPOST() {
 	defer waitGroup.Done()
 
-	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(payload))
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", url, strings.NewReader(payload))
+	if err != nil {
+		return
+	}
+	req.Header.Set("User-Agent", getRandomUserAgent())
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
@@ -110,4 +137,3 @@ func main() {
 	}
 	waitGroup.Wait()
 }
-
